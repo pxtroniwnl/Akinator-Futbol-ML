@@ -126,13 +126,20 @@ uv run python export_tree_pdf.py --output artifacts/arbol_akinator.pdf
    uv run python -c "from model import train_and_save_from_csv; train_and_save_from_csv()"
    ```
 
-5. Lanza la app:
+5. Lanza la app **desde la carpeta del proyecto** (recomendado):
 
    ```bash
+   cd /ruta/al/repo/Akinator-Futbol-ML
    uv run streamlit run app.py
    ```
 
-La primera vez que abras la app, si faltan archivos, intentará **ingesta + entrenamiento** automáticamente (puede tardar y necesita red). También puedes usar el botón **“Preparar / actualizar datos y modelo”** dentro de la interfaz.
+Si ya existen `data/raw_players.csv` y `artifacts/akinator_model.joblib`, la app arranca enseguida. Si falta alguno, verás un aviso y el botón **“Preparar datos y entrenar modelo”** (descarga + entrenamiento; puede tardar varios minutos).
+
+### Si la pantalla se queda en el “esqueleto” de carga
+
+- **Primera ejecución**: importar **pandas + scikit-learn** puede tardar **20–60 s**; debería aparecer el mensaje *“Cargando modelo en memoria…”* en el spinner.
+- **WSL y proyecto en `/mnt/c/...`**: el disco de Windows montado es **mucho más lento**; mueve el repo a `~/proyectos/...` en el disco Linux o ten paciencia en la primera carga.
+- **Rutas**: el código resuelve `data/` y `artifacts/` respecto a la ubicación de `app.py`, no al directorio desde el que lanzas el comando; si algo falla, el aviso en pantalla muestra las rutas exactas que busca.
 
 ---
 

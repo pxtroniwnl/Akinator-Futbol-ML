@@ -19,8 +19,10 @@ from sklearn.tree import DecisionTreeClassifier
 
 from preprocessing import BINARY_FEATURE_NAMES, build_xy
 
-ARTIFACT_PATH = Path("artifacts/akinator_model.joblib")
-RAW_CSV = Path("data/raw_players.csv")
+# Rutas respecto a este archivo (no al directorio de trabajo de Streamlit / terminal).
+_PROJECT_ROOT = Path(__file__).resolve().parent
+ARTIFACT_PATH = _PROJECT_ROOT / "artifacts" / "akinator_model.joblib"
+RAW_CSV = _PROJECT_ROOT / "data" / "raw_players.csv"
 
 QUESTION_TEXT: dict[str, str] = {
     "es_portero": "¿Es portero?",

@@ -1,5 +1,8 @@
 """
 Interfaz Streamlit del Akinator: recorre el árbol con Sí/No usando `st.session_state`.
+
+Evita importar pandas/sklearn al arrancar el proceso: así la primera pintura no queda
+minutos en el esqueleto de carga (especialmente en WSL + disco /mnt/c).
 """
 
 from __future__ import annotations
@@ -9,64 +12,71 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
-from data_ingestion import ingest
-from model import (
-    ARTIFACT_PATH,
-    RAW_CSV,
-    get_next_question,
-    load_bundle,
-    resolve_player_from_leaf,
-    step_on_answer,
-    train_and_save_from_csv,
-)
-
 st.set_page_config(page_title="Akinator Fútbol", page_icon="⚽", layout="centered")
 
 
-@st.cache_resource(show_spinner=False)
-def ensure_bundle() -> None:
-    """Garantiza CSV + modelo en disco (primera ejecución puede tardar por red)."""
-    load_dotenv()
-    if not RAW_CSV.exists():
-        ingest(min_players=80, output_path=RAW_CSV)
-    if not ARTIFACT_PATH.exists():
-        train_and_save_from_csv(RAW_CSV, ARTIFACT_PATH)
+def _project_root() -> Path:
+    return Path(__file__).resolve().parent
+
+
+@st.cache_resource(show_spinner="Cargando modelo en memoria…")
+def _bundle_cached(artifact_path_str: str):
+    from model import load_bundle
+
+    return load_bundle(Path(artifact_path_str))
 
 
 def main() -> None:
     load_dotenv()
+    root = _project_root()
+    raw_csv = root / "data" / "raw_players.csv"
+    artifact = root / "artifacts" / "akinator_model.joblib"
+
     st.title("Akinator de futbolistas")
     st.caption("Árbol de decisión entrenado con 40 características binarias (Scikit-Learn + Streamlit).")
 
-    csv_exists = RAW_CSV.exists()
-    model_exists = ARTIFACT_PATH.exists()
+    csv_ok = raw_csv.exists()
+    model_ok = artifact.exists()
 
-    if not (csv_exists and model_exists):
+    if not (csv_ok and model_ok):
         st.warning(
-            "Primera ejecución: falta algún artefacto para jugar "
-            f"(CSV={csv_exists}, modelo={model_exists})."
+            "Faltan archivos para jugar "
+            f"(CSV={csv_ok}, modelo={model_ok}). "
+            f"Buscados en:\n- `{raw_csv}`\n- `{artifact}`"
         )
-        st.info("Pulsa el botón para descargar/crear datos y entrenar el árbol.")
-
+        st.info(
+            "Pulsa el botón para descargar datos y entrenar. **Puede tardar varios minutos** "
+            "(muchas llamadas a la API)."
+        )
         if st.button("Preparar datos y entrenar modelo"):
             try:
-                with st.spinner("Descargando datos y entrenando (puede tardar)…"):
-                    ensure_bundle()
-                st.success("Listo. Ya puedes jugar.")
+                with st.spinner("Descargando datos y entrenando… (no cierres esta pestaña)"):
+                    from data_ingestion import ingest
+                    from model import train_and_save_from_csv
+
+                    load_dotenv()
+                    if not raw_csv.exists():
+                        ingest(min_players=80, output_path=raw_csv)
+                    if not artifact.exists():
+                        train_and_save_from_csv(raw_csv, artifact)
+                    st.cache_resource.clear()
+                st.success("Listo. Recargando…")
                 st.rerun()
             except Exception as e:
                 st.error(f"No se pudo preparar el modelo: {e}")
-                st.info("Configura `.env` (TheSportsDB suele funcionar con `THESPORTSDB_API_KEY=3`).")
+                st.info("Revisa red, firewall y `.env` (TheSportsDB suele ir con `THESPORTSDB_API_KEY=3`).")
         st.stop()
 
-    bundle = load_bundle(ARTIFACT_PATH)
+    bundle = _bundle_cached(str(artifact))
 
     if "node" not in st.session_state:
         st.session_state.node = 0
     if "history" not in st.session_state:
         st.session_state.history = []
 
-    col_a, col_b = st.columns(2)
+    from model import get_next_question, resolve_player_from_leaf, step_on_answer
+
+    col_a, _ = st.columns(2)
     with col_a:
         if st.button("Nueva partida"):
             st.session_state.node = 0

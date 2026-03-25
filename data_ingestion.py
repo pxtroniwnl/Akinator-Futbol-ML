@@ -40,6 +40,11 @@ THESPORTSDB_BASE = "https://www.thesportsdb.com/api/v1/json"
 REQUEST_SLEEP_SEC = 0.35
 
 
+def default_raw_players_csv() -> Path:
+    """Ruta por defecto del CSV relativa al paquete (independiente del cwd)."""
+    return Path(__file__).resolve().parent / "data" / "raw_players.csv"
+
+
 def _api_football_session() -> tuple[requests.Session, str]:
     load_dotenv()
     key = (os.getenv("API_FOOTBALL_KEY") or "").strip()
@@ -281,7 +286,7 @@ def ingest(
     """
     Orquesta la descarga según `DATA_PROVIDER` / claves y escribe CSV.
     """
-    output_path = output_path or Path("data/raw_players.csv")
+    output_path = output_path or default_raw_players_csv()
     provider = choose_provider()
     if provider == "api_football":
         try:
@@ -299,7 +304,7 @@ def ingest(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Descargar jugadores big-5 → CSV.")
     parser.add_argument("--min-players", type=int, default=80)
-    parser.add_argument("--output", type=Path, default=Path("data/raw_players.csv"))
+    parser.add_argument("--output", type=Path, default=default_raw_players_csv())
     args = parser.parse_args()
     df = ingest(min_players=args.min_players, output_path=args.output)
     print(f"Filas guardadas: {len(df)} → {args.output}")
