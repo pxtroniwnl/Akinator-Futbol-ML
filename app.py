@@ -38,20 +38,26 @@ def main() -> None:
     st.title("Akinator de futbolistas")
     st.caption("Árbol de decisión entrenado con 40 características binarias (Scikit-Learn + Streamlit).")
 
-    if st.button("Preparar / actualizar datos y modelo", help="Descarga CSV si falta y entrena el árbol."):
-        with st.spinner("Trabajando…"):
-            ingest(min_players=80, output_path=RAW_CSV)
-            train_and_save_from_csv(RAW_CSV, ARTIFACT_PATH)
-        st.cache_resource.clear()
-        st.success("Listo. Recarga la página o pulsa **Nueva partida**.")
-        return
+    csv_exists = RAW_CSV.exists()
+    model_exists = ARTIFACT_PATH.exists()
 
-    try:
-        ensure_bundle()
-    except Exception as e:
-        st.error(f"No se pudo preparar el modelo: {e}")
-        st.info("Configura `.env` (TheSportsDB suele funcionar con `THESPORTSDB_API_KEY=3`) o API-Football.")
-        return
+    if not (csv_exists and model_exists):
+        st.warning(
+            "Primera ejecución: falta algún artefacto para jugar "
+            f"(CSV={csv_exists}, modelo={model_exists})."
+        )
+        st.info("Pulsa el botón para descargar/crear datos y entrenar el árbol.")
+
+        if st.button("Preparar datos y entrenar modelo"):
+            try:
+                with st.spinner("Descargando datos y entrenando (puede tardar)…"):
+                    ensure_bundle()
+                st.success("Listo. Ya puedes jugar.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"No se pudo preparar el modelo: {e}")
+                st.info("Configura `.env` (TheSportsDB suele funcionar con `THESPORTSDB_API_KEY=3`).")
+        st.stop()
 
     bundle = load_bundle(ARTIFACT_PATH)
 
