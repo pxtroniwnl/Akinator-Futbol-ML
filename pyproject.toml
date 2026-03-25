@@ -1,17 +1,16 @@
 [project]
-name = "akinator-anime-ml"
+name = "akinator-futbol-ml"
 version = "0.1.0"
-description = "Add your description here"
+description = "Akinator de futbolistas con DecisionTreeClassifier y Streamlit"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.135.1",
-    "ipykernel>=7.2.0",
-    "matplotlib>=3.10.8",
-    "notebook>=7.5.5",
-    "numpy>=2.4.3",
-    "pandas>=2.3.3",
-    "scikit-learn>=1.8.0",
-    "streamlit>=1.55.0",
-    "uvicorn>=0.42.0",
+    "joblib>=1.4.2",
+    "matplotlib>=3.10.0",
+    "numpy>=2.0.0",
+    "pandas>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.32.0",
+    "scikit-learn>=1.5.0",
+    "streamlit>=1.40.0",
 ]
